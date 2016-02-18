@@ -1,0 +1,25 @@
+---
+title: "microbenchmark-snippets"
+author: "Andrzej Oleś"
+date: "`r doc_date()`"
+output: BiocStyle::md_document
+---
+
+```{r microbenchmark, echo=FALSE}
+library(microbenchmark)
+```
+
+## `data.frame` column names {#dataframe-column-names}
+
+Use `names` not `colnames` to access column names in `data.frames`.
+
+```{r data.frame}
+microbenchmark(names(mtcars), colnames(mtcars))
+identical(names(mtcars), colnames(mtcars))
+```
+
+## Session info
+
+```{r sessionInfo}
+sessionInfo()
+```
