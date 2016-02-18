@@ -18,6 +18,23 @@ microbenchmark(names(mtcars), colnames(mtcars))
 identical(names(mtcars), colnames(mtcars))
 ```
 
+Or even better, use the list representation:
+
+```{r data.frame-list}
+list = as.list(mtcars)
+microbenchmark(names(list), names(mtcars))
+identical(names(list), names(mtcars))
+```
+
+## Add elements to list
+
+Use double brackets when adding/setting elements of list
+
+```{r set-list-el}
+list = list()
+microbenchmark({list["a"] = 1}, {list[["a"]] = 1})
+```
+
 ## Session info
 
 ```{r sessionInfo}

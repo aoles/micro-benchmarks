@@ -1,4 +1,5 @@
 -   [`data.frame` column names](#dataframe-column-names)
+-   [Add elements to list](#add-elements-to-list)
 -   [Session info](#session-info)
 
 `data.frame` column names
@@ -10,12 +11,39 @@ Use `names` not `colnames` to access column names in `data.frames`.
 
     ## Unit: nanoseconds
     ##              expr  min     lq    mean median     uq    max neval cld
-    ##     names(mtcars)  494  528.5 3288.18  574.0  670.5 268100   100   a
-    ##  colnames(mtcars) 1282 1404.0 2686.26 1626.5 1811.0  51153   100   a
+    ##     names(mtcars)  489  528.5  635.37  606.0  682.0   2486   100   a
+    ##  colnames(mtcars) 1317 1441.0 4089.61 1607.5 1847.5 224430   100   a
 
     identical(names(mtcars), colnames(mtcars))
 
     ## [1] TRUE
+
+Or even better, use the list representation:
+
+    list = as.list(mtcars)
+    microbenchmark(names(list), names(mtcars))
+
+    ## Unit: nanoseconds
+    ##           expr min    lq   mean median  uq   max neval cld
+    ##    names(list)  90  96.5 125.72  111.0 119   977   100  a 
+    ##  names(mtcars) 503 528.5 822.41  584.5 677 12433   100   b
+
+    identical(names(list), names(mtcars))
+
+    ## [1] TRUE
+
+Add elements to list
+--------------------
+
+Use double brackets when adding/setting elements of list
+
+    list = list()
+    microbenchmark({list["a"] = 1}, {list[["a"]] = 1})
+
+    ## Unit: nanoseconds
+    ##                     expr  min     lq    mean median   uq   max neval cld
+    ##    {     list["a"] = 1 } 1183 1304.0 1960.05 1429.5 1604 20129   100   b
+    ##  {     list[["a"]] = 1 }  643  802.5 1226.97  899.0 1056 20076   100  a
 
 Session info
 ------------
