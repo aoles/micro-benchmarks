@@ -7,6 +7,8 @@ output: BiocStyle::md_document
 
 ```{r microbenchmark, echo=FALSE}
 library(microbenchmark)
+
+options(width=100L)
 ```
 
 ## `data.frame` column names {#dataframe-column-names}
@@ -28,11 +30,48 @@ identical(names(list), names(mtcars))
 
 ## Add elements to list
 
-Use double brackets when adding/setting elements of list
+Use double brackets when adding/setting elements of list.
 
 ```{r set-list-el}
 list = list()
 microbenchmark({list["a"] = 1}, {list[["a"]] = 1})
+```
+
+## Coerce result of `strsplit` to a vector
+
+Take the first element of the list rather than unlisting.
+
+```{r strsplit}
+x = paste(letters[1:3], collapse = ", ")
+
+microbenchmark(
+  unlist(strsplit(x, ", ", fixed=TRUE)),
+  strsplit(x, ", ", fixed=TRUE)[[1L]]
+)
+```
+
+## `sprintf` vs `paste`
+
+`sprintf` can be almost 2x faster~
+
+```{r sprintf}
+ext = "pdf"
+
+microbenchmark(
+    paste(".*\\.", ext, "$", sep=""),
+    paste0(".*\\.", ext, "$"),
+    sprintf(".*\\.%s$", ext)
+)
+```
+
+## `sapply(..., USE.NAMES=FALSE)` vs. `unlist(lapply(...))`
+
+```{r sapply_lapply}
+x = letters
+microbenchmark(
+  sapply(x, nchar, USE.NAMES=FALSE),
+  unlist(lapply(x, nchar))
+)
 ```
 
 ## Session info
