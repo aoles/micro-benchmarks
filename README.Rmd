@@ -77,24 +77,37 @@ microbenchmark(
 
 ## Interleaving two vectors
 
+The fastest approach is to use the `c(rbind(...)` trick.
+
 ```{r interleave}
-length = 10
+length = 10L
 a <- letters[1:length]
 b <- LETTERS[1:length]
 
-microbenchmark(
-  unlist(mapply(function(x, y) c(x, y), a, b, SIMPLIFY=FALSE, USE.NAMES=FALSE)),
-  c(rbind(a, b)),
-  {
-    v = vector(mode = "character", length = 2*length)
-    idx <- 2*1:10
-    v[idx-1] = a
+f <- function(a, b) {
+  v = vector(mode = "character", length = 2L*length)
+    idx <- 2L*1:length
+    v[idx-1L] = a
     v[idx] = b
-  },
-  {
-    idx <- order(c(seq_along(a), seq_along(b)))
+    v
+}
+
+
+g <- function(a, b) {
+  idx <- order(c(seq_along(a), seq_along(b)))
     c(a,b)[idx]
-  }
+}
+
+
+h <- function(a, b) {
+  unlist(mapply(function(x, y) c(x, y), a, b, SIMPLIFY=FALSE, USE.NAMES=FALSE))
+}
+
+microbenchmark(
+  c(rbind(a, b)),
+  f(a, b),
+  g(a, b),
+  h(a, b)
 )
 ```
 

@@ -16,9 +16,9 @@ Use `names` not `colnames` to access column names in `data.frames`.
     microbenchmark(names(mtcars), colnames(mtcars))
 
     ## Unit: nanoseconds
-    ##              expr  min     lq    mean median     uq    max neval cld
-    ##     names(mtcars)  535  560.0  739.82  592.5  690.5   3835   100   a
-    ##  colnames(mtcars) 1382 1534.5 5051.87 1596.0 1725.5 295572   100   a
+    ##              expr  min   lq    mean median     uq    max neval cld
+    ##     names(mtcars)  474  517  608.20    563  642.0   2272   100   a
+    ##  colnames(mtcars) 1328 1418 5758.38   1525 1695.5 374158   100   a
 
     identical(names(mtcars), colnames(mtcars))
 
@@ -30,9 +30,9 @@ Or even better, use the list representation:
     microbenchmark(names(list), names(mtcars))
 
     ## Unit: nanoseconds
-    ##           expr min  lq   mean median    uq   max neval cld
-    ##    names(list)  89 103 248.91    109 127.0 12312   100  a 
-    ##  names(mtcars) 519 534 733.18    578 683.5  9894   100   b
+    ##           expr min    lq   mean median    uq   max neval cld
+    ##    names(list)  91  96.0 263.00  108.5 119.5 13860   100  a 
+    ##  names(mtcars) 495 508.5 693.59  562.5 648.5 10851   100   b
 
     identical(names(list), names(mtcars))
 
@@ -48,8 +48,8 @@ Use double brackets when adding/setting elements of list.
 
     ## Unit: nanoseconds
     ##                     expr  min     lq    mean median     uq   max neval cld
-    ##    {     list["a"] = 1 } 1233 1318.5 1638.92 1446.5 1581.5 14788   100   a
-    ##  {     list[["a"]] = 1 }  748  926.0 1229.74 1009.0 1170.5 16690   100   a
+    ##    {     list["a"] = 1 } 1188 1289.0 1593.06 1379.5 1536.5 17043   100   a
+    ##  {     list[["a"]] = 1 }  711  840.5 1237.55  920.0 1044.5 15824   100   a
 
 Coerce result of `strsplit` to a vector
 ---------------------------------------
@@ -65,8 +65,8 @@ Take the first element of the list rather than unlisting.
 
     ## Unit: microseconds
     ##                                     expr   min     lq    mean median     uq    max neval cld
-    ##  unlist(strsplit(x, ", ", fixed = TRUE)) 2.080 2.2300 2.50111 2.3525 2.6845  6.666   100   a
-    ##    strsplit(x, ", ", fixed = TRUE)[[1L]] 1.456 1.6085 2.21879 1.6885 1.8335 17.805   100   a
+    ##  unlist(strsplit(x, ", ", fixed = TRUE)) 2.001 2.1105 2.69130 2.2130 2.4555 18.780   100   b
+    ##    strsplit(x, ", ", fixed = TRUE)[[1L]] 1.324 1.5005 1.73837 1.5865 1.7225 11.459   100  a
 
 `sprintf` vs `paste`
 --------------------
@@ -81,11 +81,11 @@ Take the first element of the list rather than unlisting.
         sprintf(".*\\.%s$", ext)
     )
 
-    ## Unit: microseconds
-    ##                                  expr   min    lq    mean median     uq    max neval cld
-    ##  paste(".*\\\\.", ext, "$", sep = "") 2.858 3.276 4.51862 3.4625 3.6540 57.283   100   b
-    ##           paste0(".*\\\\.", ext, "$") 2.659 2.976 3.45894 3.0815 3.2805 17.671   100   b
-    ##            sprintf(".*\\\\.%s$", ext) 1.478 1.881 2.10084 1.9915 2.1745  9.147   100  a
+    ## Unit: nanoseconds
+    ##                                  expr  min   lq    mean median   uq   max neval cld
+    ##  paste(".*\\\\.", ext, "$", sep = "") 1506 1627 1993.99 1726.5 1869 13651   100   b
+    ##           paste0(".*\\\\.", ext, "$") 1309 1444 1689.28 1549.5 1658 13216   100   b
+    ##            sprintf(".*\\\\.%s$", ext)  736  900 1190.70  940.0 1022 12710   100  a
 
 `sapply(..., USE.NAMES=FALSE)` vs. `unlist(lapply(...))`
 --------------------------------------------------------
@@ -97,43 +97,51 @@ Take the first element of the list rather than unlisting.
     )
 
     ## Unit: microseconds
-    ##                                 expr    min     lq     mean  median      uq     max neval cld
-    ##  sapply(x, nchar, USE.NAMES = FALSE) 51.270 53.426 60.60040 56.2080 66.9300 115.998   100   b
-    ##             unlist(lapply(x, nchar)) 39.901 42.836 48.45184 45.1715 53.5155  81.054   100  a
+    ##                                 expr    min     lq     mean  median     uq     max neval cld
+    ##  sapply(x, nchar, USE.NAMES = FALSE) 49.924 52.009 58.10911 53.9000 63.467 117.371   100   b
+    ##             unlist(lapply(x, nchar)) 40.009 41.725 45.52771 42.9345 49.612  63.608   100  a
 
 Interleaving two vectors
 ------------------------
 
-    length = 10
+The fastest approach is to use the `c(rbind(...)` trick.
+
+    length = 10L
     a <- letters[1:length]
     b <- LETTERS[1:length]
 
-    microbenchmark(
-      unlist(mapply(function(x, y) c(x, y), a, b, SIMPLIFY=FALSE, USE.NAMES=FALSE)),
-      c(rbind(a, b)),
-      {
-        v = vector(mode = "character", length = 2*length)
-        idx <- 2*1:10
-        v[idx-1] = a
+    f <- function(a, b) {
+      v = vector(mode = "character", length = 2L*length)
+        idx <- 2L*1:length
+        v[idx-1L] = a
         v[idx] = b
-      },
-      {
-        idx <- order(c(seq_along(a), seq_along(b)))
+        v
+    }
+
+
+    g <- function(a, b) {
+      idx <- order(c(seq_along(a), seq_along(b)))
         c(a,b)[idx]
-      }
+    }
+
+
+    h <- function(a, b) {
+      unlist(mapply(function(x, y) c(x, y), a, b, SIMPLIFY=FALSE, USE.NAMES=FALSE))
+    }
+
+    microbenchmark(
+      c(rbind(a, b)),
+      f(a, b),
+      g(a, b),
+      h(a, b)
     )
 
     ## Unit: microseconds
-    ##                                                                                                               expr
-    ##                             unlist(mapply(function(x, y) c(x, y), a, b, SIMPLIFY = FALSE,      USE.NAMES = FALSE))
-    ##                                                                                                     c(rbind(a, b))
-    ##  {     v = vector(mode = "character", length = 2 * length)     idx <- 2 * 1:10     v[idx - 1] = a     v[idx] = b }
-    ##                                               {     idx <- order(c(seq_along(a), seq_along(b)))     c(a, b)[idx] }
-    ##     min      lq     mean  median      uq     max neval  cld
-    ##  16.305 18.8595 22.86391 19.8355 22.3355 114.557   100    d
-    ##   2.111  2.7080  3.62464  3.1655  3.6545  14.456   100 a   
-    ##   4.486  5.3545  6.74521  6.1155  6.4835  24.078   100  b  
-    ##  14.600 15.7380 18.34568 16.5050 17.3940  57.736   100   c
+    ##            expr    min      lq     mean  median      uq    max neval  cld
+    ##  c(rbind(a, b))  1.800  2.5760  3.06521  2.9955  3.2770 12.485   100 a   
+    ##         f(a, b)  4.365  5.1740  6.85454  5.9000  6.4035 26.867   100  b  
+    ##         g(a, b) 14.096 15.2775 17.93229 16.1320 17.3550 68.373   100   c 
+    ##         h(a, b) 16.694 18.7015 22.03209 19.5500 23.9730 50.286   100    d
 
 Session info
 ------------
