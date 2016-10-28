@@ -1,8 +1,9 @@
 ---
 title: "microbenchmark-snippets"
 author: "Andrzej Oleś"
-date: "`r doc_date()`"
-output: BiocStyle::md_document
+output: 
+  md_document:
+    toc: true
 ---
 
 ```{r microbenchmark, echo=FALSE}
@@ -71,6 +72,29 @@ x = letters
 microbenchmark(
   sapply(x, nchar, USE.NAMES=FALSE),
   unlist(lapply(x, nchar))
+)
+```
+
+## Interleaving two vectors
+
+```{r interleave}
+length = 10
+a <- letters[1:length]
+b <- LETTERS[1:length]
+
+microbenchmark(
+  unlist(mapply(function(x, y) c(x, y), a, b, SIMPLIFY=FALSE, USE.NAMES=FALSE)),
+  c(rbind(a, b)),
+  {
+    v = vector(mode = "character", length = 2*length)
+    idx <- 2*1:10
+    v[idx-1] = a
+    v[idx] = b
+  },
+  {
+    idx <- order(c(seq_along(a), seq_along(b)))
+    c(a,b)[idx]
+  }
 )
 ```
 
