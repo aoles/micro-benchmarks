@@ -34,8 +34,12 @@ identical(names(list), names(mtcars))
 Use double brackets when adding/setting elements of list.
 
 ```{r set-list-el}
-list = list()
-microbenchmark({list["a"] = 1}, {list[["a"]] = 1})
+l = list()
+
+microbenchmark(
+  {l["a"] = 1},
+  {l[["a"]] = 1}
+)
 ```
 
 ## Coerce result of `strsplit` to a vector
@@ -53,7 +57,7 @@ microbenchmark(
 
 ## `sprintf` vs `paste`
 
-`sprintf` can be almost 2x faster~
+`sprintf` can be up to 2x faster.
 
 ```{r sprintf}
 ext = "pdf"
@@ -69,6 +73,7 @@ microbenchmark(
 
 ```{r sapply_lapply}
 x = letters
+
 microbenchmark(
   sapply(x, nchar, USE.NAMES=FALSE),
   unlist(lapply(x, nchar))
@@ -108,6 +113,24 @@ microbenchmark(
   f(a, b),
   g(a, b),
   h(a, b)
+)
+```
+
+## `tabulate` as a much faster alternative to `table`
+
+For programming it typically makes more sense to call `tabulate` on a well formed integer vector. If possible, specify `nbins`.
+
+```{r tabulate}
+library(EBImage)
+x = readImage(system.file('images', 'shapes.png', package='EBImage'))
+x = x[110:512,1:130]
+y = bwlabel(x)
+nbins = max(y)
+
+microbenchmark(
+  table(y),
+  tabulate(y),
+  tabulate(y, nbins)
 )
 ```
 
