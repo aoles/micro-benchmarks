@@ -82,37 +82,73 @@ microbenchmark(
 
 ## Interleaving two vectors
 
-The fastest approach is to use the `c(rbind(...)` trick.
+The fastest approach is to use "the `rbind` trick".
 
 ```{r interleave}
-length = 10L
-a <- letters[1:length]
-b <- LETTERS[1:length]
+length = 1000L
+a <- rep_len(letters, length)
+b <- rep_len(LETTERS, length)
+
+r <- function(a, b) {
+  as.vector(rbind(a, b))
+}
 
 f <- function(a, b) {
   v = vector(mode = "character", length = 2L*length)
-    idx <- 2L*1:length
-    v[idx-1L] = a
-    v[idx] = b
-    v
+  idx <- 2L*1:length
+  v[idx-1L] = a
+  v[idx] = b
+  v
 }
-
 
 g <- function(a, b) {
   idx <- order(c(seq_along(a), seq_along(b)))
-    c(a,b)[idx]
+  c(a,b)[idx]
 }
-
 
 h <- function(a, b) {
   unlist(mapply(function(x, y) c(x, y), a, b, SIMPLIFY=FALSE, USE.NAMES=FALSE))
 }
 
 microbenchmark(
-  c(rbind(a, b)),
+  r(a, b),
   f(a, b),
   g(a, b),
   h(a, b)
+)
+```
+
+## Insert elements into a vector
+
+Fill-in a preallocated results vector.
+
+```{r insert}
+n = 1000
+lines = sample(letters, n, TRUE)
+idx = sort(sample(n, size = 10))
+
+f = function(lines, idx, txt = "whatever") {
+  idx_length = length(idx)
+  lines_length = length(lines)
+  v = vector(mode = "character", length = lines_length+idx_length)
+  idx <- idx + seq_len(idx_length)
+  v[-idx] <- lines
+  v[idx] <- txt
+  v
+}
+
+g = function(lines, idx, txt = "whatever") {
+  v = rep_len(NA_character_, length(lines))
+  v[idx] = txt
+  v = as.vector(rbind(lines, v))
+  v[!is.na(v)]
+}
+
+identical(f(lines, idx), g(lines, idx))
+
+microbenchmark(
+  f(lines, idx),
+  g(lines, idx)
 )
 ```
 
